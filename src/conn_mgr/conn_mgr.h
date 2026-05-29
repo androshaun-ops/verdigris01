@@ -19,7 +19,7 @@ class ConnMgr {
  public:
   ConnMgr(int node_id, IProbe& probe, Config cfg);
 
-  Choice step(int minute_idx, const NodeView& view);
+  Choice step(int minute_idx, const NodeView& view, int backlog, int sample_per_minute);
 
   Choice current_choice() const { return choice_; }
   int switch_count() const { return switch_count_; }

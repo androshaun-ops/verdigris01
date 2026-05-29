@@ -15,7 +15,7 @@ void FirmwareNode::isr_begin_sample() {
 }
 
 void FirmwareNode::isr_commit_sample(int minute_idx) {
-    int slot = (head_ - 1 + kRingCapacity) % kRingCapacity;
+    int slot = seq_ % kRingCapacity;
     ring_[slot].sequence_num = ++seq_;
     ring_[slot].value = static_cast<int16_t>(minute_idx & 0x7FFF);
     ring_[slot].valid = 1;
@@ -29,8 +29,8 @@ void FirmwareNode::probe_update_lte(int minute_idx) {
     probe_snap_.lte = real_probe_.probe(node_id_, LinkType::LTE, -1, minute_idx);
 }
 
-Choice FirmwareNode::conn_mgr_step(int minute_idx, const NodeView& view) {
-    Choice c = mgr_.step(minute_idx, view);
+Choice FirmwareNode::conn_mgr_step(int minute_idx, const NodeView& view, int sample_per_minute) {
+    Choice c = mgr_.step(minute_idx, view, backlog(), sample_per_minute);
     active_link_ = c.type;
     active_gateway_ = c.gateway_id;
     return c;
@@ -41,7 +41,7 @@ void FirmwareNode::upload_begin() {
     inflight_gw_ = active_gateway_;
 }
 
-int FirmwareNode::upload_execute(const NodeView& view) {
+int FirmwareNode::upload_execute(const NodeView& view, int gateway_remaining_cap) {
     int cap = 0;
     bool ok = false;
 
@@ -56,6 +56,9 @@ int FirmwareNode::upload_execute(const NodeView& view) {
             if (ml.gateway_id == inflight_gw_ && ml.link_ok) {
                 ok = true;
                 cap = ml.capacity_samples_per_min;
+                if (gateway_remaining_cap >= 0) {
+                    cap = std::min(cap, gateway_remaining_cap);
+                }
                 break;
             }
         }

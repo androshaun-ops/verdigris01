@@ -35,18 +35,21 @@ class FirmwareNode {
     void probe_update_lte(int minute_idx);
 
     // ConnMgr task: run link selection using current snapshot
-    Choice conn_mgr_step(int minute_idx, const NodeView& view);
+    Choice conn_mgr_step(int minute_idx, const NodeView& view, int sample_per_minute = 1);
 
     // Upload task: capture current active link for this upload cycle
     void upload_begin();
     // Upload task: drain ring buffer over captured link, return samples sent
-    int upload_execute(const NodeView& view);
+    int upload_execute(const NodeView& view, int gateway_remaining_cap = -1);
 
     int delivered() const { return delivered_; }
     int backlog() const;
     Choice current_choice() const;
     int switch_count() const { return mgr_.switch_count(); }
     int gateway_change_count() const { return mgr_.gateway_change_count(); }
+
+    LinkType inflight_link() const { return inflight_link_; }
+    int inflight_gateway() const { return inflight_gw_; }
 
  private:
     int node_id_;

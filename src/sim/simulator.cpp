@@ -31,46 +31,90 @@ SimResult Simulator::run() {
       nodes[i].upload_begin();
     }
 
-    // Phase 3: Probe task runs — update ETH probes
+    // Phase 3: Probe task runs — update ETH and LTE probes
     for (int i = 0; i < cfg_.nodes; i++) {
       nodes[i].probe_update_eth(t);
+      nodes[i].probe_update_lte(t);
     }
 
     // Phase 4: ConnMgr task runs — select link using current probe snapshot
     std::vector<Choice> choices(cfg_.nodes);
     for (int i = 0; i < cfg_.nodes; i++) {
-      choices[i] = nodes[i].conn_mgr_step(t, ws.nodes[i]);
+      choices[i] = nodes[i].conn_mgr_step(t, ws.nodes[i], cfg_.sample_per_minute);
     }
 
-    // Phase 5: Probe task resumes — update LTE probes
+    // Phase 5: Probe task resumes (no-op)
     for (int i = 0; i < cfg_.nodes; i++) {
-      nodes[i].probe_update_lte(t);
+      // Already updated in Phase 3
     }
 
     // Phase 6: Upload task resumes — drain ring buffer over captured link
     std::vector<int> gw_remaining(cfg_.nodes, 0);
 
     for (int i = 0; i < cfg_.nodes; i++) {
-      if (choices[i].type == LinkType::Mesh) continue;
+      LinkType inflight_link = nodes[i].inflight_link();
+      if (inflight_link == LinkType::Mesh) continue;
+
       int sent = nodes[i].upload_execute(ws.nodes[i]);
       int cap = 0;
-      if (choices[i].type == LinkType::Ethernet && ws.nodes[i].eth.usable) {
+      if (inflight_link == LinkType::Ethernet && ws.nodes[i].eth.usable) {
         cap = ws.nodes[i].eth.capacity_samples_per_min;
-      } else if (choices[i].type == LinkType::LTE && ws.nodes[i].lte.usable) {
+      } else if (inflight_link == LinkType::LTE && ws.nodes[i].lte.usable) {
         cap = ws.nodes[i].lte.capacity_samples_per_min;
       }
       gw_remaining[i] = std::max(0, cap - sent);
     }
 
     for (int i = 0; i < cfg_.nodes; i++) {
-      if (choices[i].type != LinkType::Mesh) continue;
-      nodes[i].upload_execute(ws.nodes[i]);
+      LinkType inflight_link = nodes[i].inflight_link();
+      if (inflight_link != LinkType::Mesh) continue;
+
+      int gw_id = nodes[i].inflight_gateway();
+      int gw_cap = (gw_id >= 0) ? gw_remaining[gw_id] : 0;
+      int sent = nodes[i].upload_execute(ws.nodes[i], gw_cap);
+      if (gw_id >= 0) {
+        gw_remaining[gw_id] = std::max(0, gw_remaining[gw_id] - sent);
+      }
     }
 
     // Phase 7: ISR bottom-half — commit sample data to ring buffer
     for (int i = 0; i < cfg_.nodes; i++) {
       for (int s = 0; s < cfg_.sample_per_minute; s++) {
         nodes[i].isr_commit_sample(t);
+      }
+    }
+  }
+
+  // Final flush: allow the upload task to run one final time to deliver
+  // samples committed in the final minute's ISR.
+  if (cfg_.minutes > 0) {
+    WorldStep ws = world_.step_at(cfg_.minutes - 1);
+    for (int i = 0; i < cfg_.nodes; i++) {
+      nodes[i].upload_begin();
+    }
+    std::vector<int> gw_remaining(cfg_.nodes, 0);
+    for (int i = 0; i < cfg_.nodes; i++) {
+      LinkType inflight_link = nodes[i].inflight_link();
+      if (inflight_link == LinkType::Mesh) continue;
+
+      int sent = nodes[i].upload_execute(ws.nodes[i]);
+      int cap = 0;
+      if (inflight_link == LinkType::Ethernet && ws.nodes[i].eth.usable) {
+        cap = ws.nodes[i].eth.capacity_samples_per_min;
+      } else if (inflight_link == LinkType::LTE && ws.nodes[i].lte.usable) {
+        cap = ws.nodes[i].lte.capacity_samples_per_min;
+      }
+      gw_remaining[i] = std::max(0, cap - sent);
+    }
+    for (int i = 0; i < cfg_.nodes; i++) {
+      LinkType inflight_link = nodes[i].inflight_link();
+      if (inflight_link != LinkType::Mesh) continue;
+
+      int gw_id = nodes[i].inflight_gateway();
+      int gw_cap = (gw_id >= 0) ? gw_remaining[gw_id] : 0;
+      int sent = nodes[i].upload_execute(ws.nodes[i], gw_cap);
+      if (gw_id >= 0) {
+        gw_remaining[gw_id] = std::max(0, gw_remaining[gw_id] - sent);
       }
     }
   }
