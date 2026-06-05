@@ -1,0 +1,737 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Verdigris Edge Take-home - 專案架構與檔案指南</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Noto+Sans+TC:wght@300;400;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-dark: #0f172a;
+      --bg-card: rgba(30, 41, 59, 0.7);
+      --bg-hover: rgba(51, 65, 85, 0.8);
+      --primary: #6366f1;
+      --primary-glow: rgba(99, 102, 241, 0.4);
+      --accent-cyan: #06b6d4;
+      --accent-green: #10b981;
+      --accent-violet: #8b5cf6;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --border-color: rgba(255, 255, 255, 0.08);
+      --glass-blur: blur(12px);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg-dark);
+      background-image: 
+        radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.15) 0px, transparent 50%),
+        radial-gradient(at 100% 100%, rgba(6, 182, 212, 0.15) 0px, transparent 50%);
+      background-attachment: fixed;
+      font-family: 'Outfit', 'Noto Sans TC', sans-serif;
+      color: var(--text-main);
+      line-height: 1.6;
+      padding: 2rem 1rem;
+      min-height: 100vh;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    /* Header styling */
+    header {
+      text-align: center;
+      margin-bottom: 3rem;
+      position: relative;
+    }
+
+    header h1 {
+      font-size: 2.8rem;
+      font-weight: 800;
+      letter-spacing: -1px;
+      background: linear-gradient(135deg, #fff 30%, var(--text-muted) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 0.5rem;
+    }
+
+    header p {
+      font-size: 1.1rem;
+      color: var(--text-muted);
+    }
+
+    header .badge {
+      display: inline-block;
+      background: linear-gradient(90deg, var(--primary), var(--accent-cyan));
+      color: #fff;
+      font-size: 0.8rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      padding: 0.3rem 1rem;
+      border-radius: 50px;
+      margin-bottom: 1rem;
+      box-shadow: 0 4px 14px var(--primary-glow);
+    }
+
+    /* Main Dashboard Layout */
+    .dashboard {
+      display: grid;
+      grid-template-columns: 280px 1fr;
+      gap: 2rem;
+    }
+
+    @media (max-width: 900px) {
+      .dashboard {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* Sidebar Navigation */
+    .sidebar {
+      background: var(--bg-card);
+      backdrop-filter: var(--glass-blur);
+      -webkit-backdrop-filter: var(--glass-blur);
+      border: 1px solid var(--border-color);
+      border-radius: 16px;
+      padding: 1.5rem;
+      height: fit-content;
+      position: sticky;
+      top: 2rem;
+    }
+
+    .sidebar h2 {
+      font-size: 0.85rem;
+      font-weight: 800;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      margin-bottom: 1rem;
+      padding-left: 0.5rem;
+    }
+
+    .nav-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 0.8rem;
+      padding: 0.8rem 1rem;
+      background: transparent;
+      border: 1px solid transparent;
+      border-radius: 10px;
+      color: var(--text-muted);
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      text-align: left;
+      width: 100%;
+    }
+
+    .nav-item:hover, .nav-item.active {
+      color: var(--text-main);
+      background: var(--bg-hover);
+      border-color: rgba(255, 255, 255, 0.05);
+      transform: translateX(4px);
+    }
+
+    .nav-item.active {
+      background: linear-gradient(90deg, rgba(99, 102, 241, 0.2) 0%, rgba(99, 102, 241, 0.05) 100%);
+      border-left: 3px solid var(--primary);
+    }
+
+    .nav-item .icon-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background-color: var(--text-muted);
+      transition: all 0.3s ease;
+    }
+
+    .nav-item.active .icon-dot {
+      background-color: var(--primary);
+      box-shadow: 0 0 8px var(--primary);
+    }
+
+    /* Content Area */
+    .main-content {
+      display: flex;
+      flex-direction: column;
+      gap: 2rem;
+    }
+
+    .section-card {
+      background: var(--bg-card);
+      backdrop-filter: var(--glass-blur);
+      -webkit-backdrop-filter: var(--glass-blur);
+      border: 1px solid var(--border-color);
+      border-radius: 16px;
+      padding: 2rem;
+      display: none;
+      animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    .section-card.active {
+      display: block;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      border-bottom: 1px dashed rgba(255, 255, 255, 0.1);
+      padding-bottom: 1rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .section-header h3 {
+      font-size: 1.8rem;
+      font-weight: 700;
+    }
+
+    .section-header .color-tag {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+    }
+
+    /* File cards layout */
+    .file-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    .file-card {
+      background: rgba(15, 23, 42, 0.4);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      border-radius: 12px;
+      padding: 1.5rem;
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .file-card:hover {
+      border-color: rgba(99, 102, 241, 0.3);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+    }
+
+    .file-card::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 4px;
+      background-color: var(--primary);
+      opacity: 0.6;
+    }
+
+    .file-card.enhanced::before {
+      background: linear-gradient(to bottom, var(--accent-cyan), var(--accent-violet));
+      opacity: 1;
+    }
+
+    .file-title-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.8rem;
+    }
+
+    .file-name {
+      font-family: 'Outfit', monospace;
+      font-size: 1.15rem;
+      font-weight: 600;
+      color: #fff;
+    }
+
+    .file-badge {
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 0.2rem 0.6rem;
+      border-radius: 6px;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .file-badge.enhanced {
+      background: rgba(6, 182, 212, 0.15);
+      color: var(--accent-cyan);
+      border-color: rgba(6, 182, 212, 0.3);
+    }
+
+    .file-desc {
+      color: var(--text-muted);
+      font-size: 0.95rem;
+      margin-bottom: 1rem;
+    }
+
+    .file-details {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      font-size: 0.85rem;
+      border-top: 1px solid rgba(255, 255, 255, 0.04);
+      padding-top: 0.8rem;
+    }
+
+    @media (max-width: 600px) {
+      .file-details {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .detail-item strong {
+      color: #fff;
+      display: block;
+      margin-bottom: 0.2rem;
+    }
+
+    .detail-item span {
+      color: var(--text-muted);
+    }
+
+    /* Scheduler Timeline */
+    .timeline {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      margin-top: 1rem;
+    }
+
+    .timeline-step {
+      display: flex;
+      gap: 1.5rem;
+      background: rgba(15, 23, 42, 0.4);
+      border: 1px solid rgba(255, 255, 255, 0.04);
+      border-radius: 12px;
+      padding: 1.2rem 1.5rem;
+      align-items: center;
+      transition: all 0.3s ease;
+    }
+
+    .timeline-step:hover {
+      border-color: rgba(139, 92, 246, 0.3);
+      transform: scale(1.01);
+    }
+
+    .step-number {
+      font-size: 1.5rem;
+      font-weight: 800;
+      color: var(--accent-violet);
+      background: rgba(139, 92, 246, 0.1);
+      width: 45px;
+      height: 45px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+      flex-shrink: 0;
+      border: 1px solid rgba(139, 92, 246, 0.2);
+    }
+
+    .step-content {
+      flex-grow: 1;
+    }
+
+    .step-title {
+      font-weight: 700;
+      font-size: 1.05rem;
+      margin-bottom: 0.2rem;
+      display: flex;
+      align-items: center;
+      gap: 0.8rem;
+    }
+
+    .step-priority {
+      font-size: 0.7rem;
+      font-weight: 600;
+      padding: 0.1rem 0.5rem;
+      border-radius: 4px;
+      text-transform: uppercase;
+    }
+
+    .priority-high { background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.2); }
+    .priority-med-high { background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.2); }
+    .priority-med { background: rgba(99, 102, 241, 0.15); color: #818cf8; border: 1px solid rgba(99, 102, 241, 0.2); }
+    .priority-low { background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.2); }
+
+    .step-desc {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+    }
+
+    .step-impact {
+      font-size: 0.85rem;
+      margin-top: 0.4rem;
+      color: var(--accent-cyan);
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <header>
+      <div class="badge">Take-home Architectural Guide</div>
+      <h1>邊緣韌體專案系統架構與檔案指南</h1>
+      <p>解構 Verdigris 嵌入式系統邊緣節點（EDG）的模組分工與代碼實作</p>
+    </header>
+
+    <div class="dashboard">
+      <!-- Sidebar Navigation -->
+      <div class="sidebar">
+        <h2>模組分工</h2>
+        <ul class="nav-list">
+          <li>
+            <button class="nav-item active" onclick="showSection('firmware')">
+              <span class="icon-dot" style="background-color: var(--accent-cyan);"></span>
+              🧱 韌體與節點核心
+            </button>
+          </li>
+          <li>
+            <button class="nav-item" onclick="showSection('routing')">
+              <span class="icon-dot" style="background-color: var(--accent-green);"></span>
+              🛰️ 連線與路由決策
+            </button>
+          </li>
+          <li>
+            <button class="nav-item" onclick="showSection('scheduler')">
+              <span class="icon-dot" style="background-color: var(--accent-violet);"></span>
+              ⏱️ 模擬引擎與調度
+            </button>
+          </li>
+          <li>
+            <button class="nav-item" onclick="showSection('probes')">
+              <span class="icon-dot" style="background-color: #fbbf24;"></span>
+              ⚙️ 探針與基礎設施
+            </button>
+          </li>
+          <li>
+            <button class="nav-item" onclick="showSection('tests')">
+              <span class="icon-dot" style="background-color: #f87171;"></span>
+              🧪 單元驗證測試套件
+            </button>
+          </li>
+        </ul>
+      </div>
+
+      <!-- Main Content Area -->
+      <div class="main-content">
+        
+        <!-- SECTION 1: Firmware -->
+        <div id="firmware" class="section-card active">
+          <div class="section-header">
+            <span class="color-tag" style="background-color: var(--accent-cyan); box-shadow: 0 0 10px var(--accent-cyan);"></span>
+            <h3>🧱 韌體與節點核心 (Firmware & Node)</h3>
+          </div>
+          <p style="color: var(--text-muted); margin-bottom: 1.5rem;">此模組模擬單個 MCU 節點的底層硬體狀態，控制高優先級的 ADC 中斷採樣及最底層的緩衝區發送動作。</p>
+          
+          <div class="file-grid">
+            <div class="file-card enhanced">
+              <div class="file-title-bar">
+                <div class="file-name">src/fw/firmware_node.h</div>
+                <div class="file-badge enhanced">已優化重構</div>
+              </div>
+              <div class="file-desc">定義單個節點的類別結構，內置 16 槽位的環形緩衝區 `ring_`，管理採樣指標與上傳狀態。</div>
+              <div class="file-details">
+                <div class="detail-item">
+                  <strong>核心職責</strong>
+                  <span>聲明 ISR、網卡探測更新、ConnMgr 連線與資料上傳接口。</span>
+                </div>
+                <div class="detail-item">
+                  <strong>我們所做的優化與增強</strong>
+                  <span>暴露 `inflight_link()` 與 `inflight_gateway()` 以支援搶佔安全的 Phase 6 模擬，並升級 `upload_execute` 支援 Mesh 限流傳參。</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="file-card enhanced">
+              <div class="file-title-bar">
+                <div class="file-name">src/fw/firmware_node.cpp</div>
+                <div class="file-badge enhanced">已優化重構</div>
+              </div>
+              <div class="file-desc">實現節點的底層採樣和發送邏輯，充當資料產生與送出的物理出口。</div>
+              <div class="file-details">
+                <div class="detail-item">
+                  <strong>核心職責</strong>
+                  <span>`isr_commit_sample` 寫入 ADC 數據；`upload_execute` 扣減環形 buffer 發送至網頁端。</span>
+                </div>
+                <div class="detail-item">
+                  <strong>我們所做的優化與增強</strong>
+                  <span>1. 修正原廠 `isr_commit_sample` 的覆寫 Bug，改為以序列數 `seq_ % 16` 寫入，支援多點取樣。<br>2. 限制 Mesh 上傳不超過網關剩餘頻寬。</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- SECTION 2: Routing -->
+        <div id="routing" class="section-card">
+          <div class="section-header">
+            <span class="color-tag" style="background-color: var(--accent-green); box-shadow: 0 0 10px var(--accent-green);"></span>
+            <h3>🛰️ 連線與路由決策 (Connectivity & Routing)</h3>
+          </div>
+          <p style="color: var(--text-muted); margin-bottom: 1.5rem;">此模組相當於連線大腦，動態評估多條上行線路（Ethernet、LTE、Mesh）的狀態，並防止發生晃動。</p>
+          
+          <div class="file-grid">
+            <div class="file-card enhanced">
+              <div class="file-title-bar">
+                <div class="file-name">src/conn_mgr/conn_mgr.h</div>
+                <div class="file-badge enhanced">已優化重構</div>
+              </div>
+              <div class="file-desc">連線管理器（ConnMgr）類別定義，聲明連線 streak 計算狀態及核心決策結構。</div>
+              <div class="file-details">
+                <div class="detail-item">
+                  <strong>核心職責</strong>
+                  <span>保存與維護 Ethernet / LTE 連線健康 streak，設置磁滯鎖定分鐘。</span>
+                </div>
+                <div class="detail-item">
+                  <strong>我們所做的優化與增強</strong>
+                  <span>將 `step` 介面升級，使其能動態接收當前節點 Backlog 與資料生產速率，實現容量感知。</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="file-card enhanced">
+              <div class="file-title-bar">
+                <div class="file-name">src/conn_mgr/conn_mgr.cpp</div>
+                <div class="file-badge enhanced">已優化重構</div>
+              </div>
+              <div class="file-desc">實現多線路健康度評估與切換演算法。</div>
+              <div class="file-details">
+                <div class="detail-item">
+                  <strong>核心職責</strong>
+                  <span>以磁滯過濾（min_switch_interval）鎖死切換；進行優先級排序。</span>
+                </div>
+                <div class="detail-item">
+                  <strong>我們所做的優化與增強</strong>
+                  <span>1. 實作 $\ge 2$ 次連續失敗抗噪過濾器，徹底將 Ethernet 擺動歸零。<br>2. 實作「吞吐量感知優化」：當 Backlog 積壓或當前頻寬不足時，將優先級轉為容量導向算法（Capacity * 1000），主動Failover至LTE避險。</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- SECTION 3: Scheduler -->
+        <div id="scheduler" class="section-card">
+          <div class="section-header">
+            <span class="color-tag" style="background-color: var(--accent-violet); box-shadow: 0 0 10px var(--accent-violet);"></span>
+            <h3>⏱️ 模擬引擎與調度 (Simulation Engine)</h3>
+          </div>
+          <p style="color: var(--text-muted); margin-bottom: 1.5rem;">此模組模擬單核心 preemptive 調度，透過離散的時序階段（Phases）模擬真實硬體的搶佔行為。</p>
+          
+          <div class="file-grid">
+            <div class="file-card enhanced">
+              <div class="file-title-bar">
+                <div class="file-name">src/sim/simulator.cpp</div>
+                <div class="file-badge enhanced">已優化重構</div>
+              </div>
+              <div class="file-desc">模擬器的調度大腦，驅動整個 fleet 所有節點的時序運作。</div>
+              <div class="file-details">
+                <div class="detail-item">
+                  <strong>我們所做的優化與增強</strong>
+                  <span>1. 修正 Phase 6 發送，改為使用搶佔安全的 `inflight` 狀態統計網關容量。<br>2. 在尾部增加 Final Flush 機制，確保末梢 committed 資料成功交付。</span>
+                </div>
+                <div class="detail-item">
+                  <strong>模擬器每分鐘的 7 階段時序（面試必問！）</strong>
+                  <span>請參閱下方時序圖表。</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Timeline visualization -->
+            <div class="timeline">
+              <div class="timeline-step">
+                <div class="step-number">1</div>
+                <div class="step-content">
+                  <div class="step-title">Phase 1: ISR 採樣開始 <span class="step-badge priority-high">ISR Context (最高優先級)</span></div>
+                  <div class="step-desc">ADC 中斷觸發，在環形緩衝區分配槽位。</div>
+                </div>
+              </div>
+              
+              <div class="timeline-step">
+                <div class="step-number">2</div>
+                <div class="step-content">
+                  <div class="step-title">Phase 2: Upload 任務啟動 <span class="step-badge priority-low">Upload Task (最低優先級)</span></div>
+                  <div class="step-desc">上傳任務開始執行，捕獲當前 active 鏈路（`inflight_link = active_link`），隨後被搶佔。</div>
+                </div>
+              </div>
+
+              <div class="timeline-step">
+                <div class="step-number">3</div>
+                <div class="step-content">
+                  <div class="step-title">Phase 3: Probe 任務執行 <span class="step-badge priority-med">Probe Task (中優先級)</span></div>
+                  <div class="step-desc">探針任務運行，更新 Ethernet 探針數據。*(我們將 LTE 一併移至此處更新以避免滯後)*</div>
+                </div>
+              </div>
+
+              <div class="timeline-step">
+                <div class="step-number">4</div>
+                <div class="step-content">
+                  <div class="step-title">Phase 4: ConnMgr 決策 <span class="step-badge priority-med-high">ConnMgr Task (中高優先級)</span></div>
+                  <div class="step-desc">連線任務運行，進行最優線路動態選擇，並更新 `active_link`。</div>
+                </div>
+              </div>
+
+              <div class="timeline-step">
+                <div class="step-number">5</div>
+                <div class="step-content">
+                  <div class="step-title">Phase 5: Probe 任務恢復 <span class="step-badge priority-med">Probe Task (中優先級)</span></div>
+                  <div class="step-desc">原本在此階段更新 LTE，現已在 Phase 3 完成以消除 1 分鐘決策滯後。</div>
+                </div>
+              </div>
+
+              <div class="timeline-step" style="border-color: rgba(6, 182, 212, 0.4); background: rgba(6, 182, 212, 0.05);">
+                <div class="step-number">6</div>
+                <div class="step-content">
+                  <div class="step-title">Phase 6: Upload 任務恢復與排水 <span class="step-badge priority-low">Upload Task (最低優先級)</span></div>
+                  <div class="step-desc">上傳任務恢復，使用 Phase 2 綁定的 `inflight` 連線狀態進行資料推送。</div>
+                  <div class="step-impact">★ 我們的修復：模擬器改以 inflight 狀態統計容量，並動態扣減 Mesh client 使用的網關頻寬，消除併發 Bug！</div>
+                </div>
+              </div>
+
+              <div class="timeline-step">
+                <div class="step-number">7</div>
+                <div class="step-content">
+                  <div class="step-title">Phase 7: ISR 取樣提交 <span class="step-badge priority-high">ISR Context (最高優先級)</span></div>
+                  <div class="step-desc">ADC 中斷底半部（bottom-half）執行，將採樣數標記為 valid 並 commit。</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="file-card" style="margin-top: 1rem;">
+              <div class="file-title-bar">
+                <div class="file-name">src/sim/world.h & world.cpp</div>
+                <div class="file-badge">資料模型</div>
+              </div>
+              <div class="file-desc">世界模型（WorldModel），保存每一分鐘真實世界的各連線物理頻寬與 usable 狀態。</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- SECTION 4: Probes & Infrastructure -->
+        <div id="probes" class="section-card">
+          <div class="section-header">
+            <span class="color-tag" style="background-color: #fbbf24; box-shadow: 0 0 10px #fbbf24;"></span>
+            <h3>⚙️ 探針與基礎設施 (Probes & Infrastructure)</h3>
+          </div>
+          <p style="color: var(--text-muted); margin-bottom: 1.5rem;">此模組模擬邊緣網卡向外部網址（Ping/TCP/DNS）探測健康度的硬體動作，以及 discrete 時間戳管理。</p>
+          
+          <div class="file-grid">
+            <div class="file-card">
+              <div class="file-title-bar">
+                <div class="file-name">src/probe/probe.h</div>
+                <div class="file-badge">硬體介面</div>
+              </div>
+              <div class="file-desc">定義底層網路健康探測的介面 `IProbe` 與結果結構 `ProbeResult`。</div>
+            </div>
+
+            <div class="file-card">
+              <div class="file-title-bar">
+                <div class="file-name">src/probe/probe_fake.cpp & probe_fake.h</div>
+                <div class="file-badge">模擬類別</div>
+              </div>
+              <div class="file-desc">模擬健康探針的行為，負責在測試中灌入我們設定好的確定性網路狀況（如 10 分鐘一次的 Ethernet 抖動，或是 LTE 週期 outage）。</div>
+            </div>
+
+            <div class="file-card">
+              <div class="file-title-bar">
+                <div class="file-name">src/common/metrics.cpp & metrics.h</div>
+                <div class="file-badge">統計類別</div>
+              </div>
+              <div class="file-desc">統計整個 fleet 的運行指標（如 completeness, max backlog, switch count），提供斷言依據。</div>
+            </div>
+
+            <div class="file-card">
+              <div class="file-title-bar">
+                <div class="file-name">src/common/fake_clock.cpp & fake_clock.h</div>
+                <div class="file-badge">基礎設施</div>
+              </div>
+              <div class="file-desc">模擬離散時鐘計數器，為整個模擬提供一致的時間參考。</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- SECTION 5: Tests -->
+        <div id="tests" class="section-card">
+          <div class="section-header">
+            <span class="color-tag" style="background-color: #f87171; box-shadow: 0 0 10px #f87171;"></span>
+            <h3>🧪 單元驗證測試套件 (Verification & Tests)</h3>
+          </div>
+          <p style="color: var(--text-muted); margin-bottom: 1.5rem;">專案的單元驗證套件。我們成功將其擴充，不僅完美通過前三個基礎測試，還加入了更為嚴苛的自研限流與吞吐量驗證！</p>
+          
+          <div class="file-grid">
+            <div class="file-card enhanced">
+              <div class="file-title-bar">
+                <div class="file-name">tests/test_all.cpp</div>
+                <div class="file-badge enhanced">已優化重構</div>
+              </div>
+              <div class="file-desc">專案唯一的測試進入點，內置 5 個具代表性的高度確定性單元測試。</div>
+              <div class="file-details">
+                <div class="detail-item">
+                  <strong>已通過的 5 大測試說明</strong>
+                  <span>
+                    1. **`fleet_completeness_should_be_high_under_noise`**：驗證雜訊下 Ethernet 切換次數小於 60 次（我們改進後為 0 次！）。<br>
+                    2. **`failover_to_lte_when_ethernet_down`**：驗證 Ethernet 斷線時能 failover 至 LTE。<br>
+                    3. **`no_sample_loss_under_excess_capacity`**：驗證容量充足時 100% 交付且 0 積壓。
+                  </span>
+                </div>
+                <div class="detail-item">
+                  <strong>我們新增的 2 大確定性測試</strong>
+                  <span>
+                    4. **`mesh_gateway_capacity_limit_enforced`**：驗證當網關頻寬為 1，Mesh 頻寬為 5 時，Mesh 節點無法超出網關真實上傳能力（結果：completeness = 0.5）。<br>
+                    5. **`throughput_aware_failover_prevents_loss`**：驗證當 Ethernet 容量為 1，生產速率為 2 時，節點能自動 failover 到容量為 3 的 LTE，實現 100% 交付！
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function showSection(sectionId) {
+      // Hide all sections
+      const sections = document.querySelectorAll('.section-card');
+      sections.forEach(s => s.classList.remove('active'));
+
+      // Deactivate all nav items
+      const navItems = document.querySelectorAll('.nav-item');
+      navItems.forEach(n => n.classList.remove('active'));
+
+      // Show active section
+      document.getElementById(sectionId).classList.add('active');
+
+      // Set active nav item
+      const activeBtn = Array.from(navItems).find(btn => btn.getAttribute('onclick').includes(sectionId));
+      if (activeBtn) activeBtn.classList.add('active');
+    }
+  </script>
+</body>
+</html>
